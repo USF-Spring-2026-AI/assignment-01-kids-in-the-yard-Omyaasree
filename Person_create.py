@@ -4,17 +4,20 @@ import random
 
 class PersonFactory:
     def __init__(self):
+        # read all teh necessary files 
+        # life_expectancy, first names, last names and probabilty of gender , rank to probability
         self.life_expectancy_df = pd.read_csv('life_expectancy.csv')
         self.first_names_df = pd.read_csv('first_names.csv')
-
         self.gender_prob_df = pd.read_csv('gender_name_probability.csv')
         self.last_names_df = pd.read_csv('last_names.csv')
-
         self.birth_marriage_rates_df = pd.read_csv('birth_and_marriage_rates.csv')
-        
         rank_to_prob_df = pd.read_csv('rank_to_probability.csv')
+
+
+
         self.last_name_weights = []
 
+        # Convert column headers to float weights for use in weighted random selection
         for p in rank_to_prob_df.columns:
             probability_value = float(p)
             self.last_name_weights.append(probability_value)
@@ -25,12 +28,13 @@ class PersonFactory:
                 return None
             return random.choice(items)
 
+        # Accumulate weights to create a range for the target random number
         total_weight = 0
         for w in weights:
             total_weight = total_weight + w
 
         target_number = random.uniform(0, total_weight)
-
+        # find which interval the target number falls into
         running_total = 0
         for i in range(len(items)):
             current_item_weight = weights[i]
@@ -52,10 +56,11 @@ class PersonFactory:
         return f"{result}s"
 
     def determine_gender(self, decade):
-
+        # Randomly assigns a gender; can be expanded for specific CSV probabilities.
         return random.choice(['male', 'female'])
 
     def get_random_first_name(self, decade, gender):
+        # Filters names by decade and gender to pick a name based on frequency weights
         names_for_decade = self.first_names_df[
             (self.first_names_df['decade'] == decade) & 
             (self.first_names_df['gender'] == gender)
@@ -72,6 +77,7 @@ class PersonFactory:
         return self.manual_weighted_choice(names, self.last_name_weights)
 
     def get_life_expectancy(self, year_born):
+        # Apply the required +/- 10 year random variation
         row = self.life_expectancy_df[self.life_expectancy_df['Year'] == year_born]
         if row.empty:
             base_expectancy = 80.0 
@@ -87,16 +93,20 @@ class PersonFactory:
         return year_died
 
     def create_person(self, year_born, last_name=None, gender=None):
-        decade = self.get_decade_string(year_born)
-        
-        if not gender:
-            gender = self.determine_gender(decade)
+            decade = self.get_decade_string(year_born)
+            if not gender:
+                gender = self.determine_gender(decade)
+
+            first_name = self.get_random_first_name(decade, gender)
             
-        first_name = self.get_random_first_name(decade, gender)
-        
-        if not last_name:
-            last_name = self.get_random_last_name(decade)
+            # If no last name is provided (e.g., root people), pull from random list
+            if not last_name:
+                last_name = self.get_random_last_name(decade)
+
+            new_person = Person(first_name, last_name, year_born, 0, gender)
+            # Initialize person and update year_died using the defined setter
+
+            year_died = self.get_life_expectancy(year_born)
+            new_person.year_died = year_died 
             
-        year_died = self.get_life_expectancy(year_born)
-        
-        return Person(first_name, last_name, year_born, year_died, gender)
+            return new_person

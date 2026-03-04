@@ -3,17 +3,27 @@ import random
 class FamilyTree:
     def __init__(self, factory):
         self.factory = factory
-        self.root_people = []
-        self.all_people_list = []
+        self.root_people = [] # Initial pair born in 1950
+        self.all_people_list = [] # all people into one more list
 
     def add_root_person(self, person):
+        # Adds the founding members of the tree to the simulation
         self.root_people.append(person)
         self.all_people_list.append(person)
+
+    def get_count_by_decade(self):
+        counts = {}
+        for p in self.all_people_list:
+            year = p.year_born 
+            decade = self.factory.get_decade_string(year)
+            counts[decade] = counts.get(decade, 0) + 1
+        return counts
 
     def generate_descendants(self, person, year_limit=2120):
         
         decade = self.factory.get_decade_string(person.year_born)
 
+        # Adds the founding members of the tree to the simulation
         rates = self.factory.birth_marriage_rates_df[
             self.factory.birth_marriage_rates_df['decade'] == decade
         ].iloc[0] # get first row 
@@ -21,6 +31,7 @@ class FamilyTree:
         has_partner = random.random() < rates['marriage_rate']
 
         if has_partner == True:
+            # Partners are born within +/- 10 years of the person
             year_offset = random.randint(-10, 10)
             partner_year = person.year_born + year_offset
 
@@ -44,12 +55,13 @@ class FamilyTree:
         if num_children < 0:
             num_children = 0
 
+        # Distribute child birth years evenly between parent age 25 and 45
         birth_years = []
         if num_children > 0:
             if num_children == 1:
                 birth_years = [person.year_born + 35]
             else:
-                gap = 20 / (num_children - 1)
+                gap = 20 / (num_children - 1) #if single child then midpoint
                 birth_years = []
 
                 gap = 20 / (num_children - 1)
@@ -60,13 +72,14 @@ class FamilyTree:
                     birth_years.append(int(child_year))
 
         for b_year in birth_years:
+            # Stop generation if the birth year exceeds the simulation cutoff (2120)
             if b_year > year_limit:
                 continue
             
             child = self.factory.create_person(b_year, last_name=person.last_name)
             person.add_child(child)
             self.all_people_list.append(child)
-            
+            # Recurse: The child now becomes the parent for the next generation
             self.generate_descendants(child, year_limit)
 
     def get_total_count(self):

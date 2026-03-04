@@ -10,16 +10,35 @@ class Person:
         self.gender = gender
         
         self.partner = None
-        self.children = []
+        self.children = [] # KEEPS TRACK OF ALL TEH CHILDREN IN AN ARRAY FOR USE 
 
+    #Setters
     def add_child(self, child_person):
         self.children.append(child_person)
 
     def set_partner(self, partner_person):
         self.partner = partner_person
 
+    def year_born(self, value):
+        self._year_born = value
+
+    # GETTERS
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.year_born}-{self.year_died})"
+    
+    def year_born(self):
+        return self._year_born
+
+    def is_alive(self, current_year):
+    # Check if the year we are looking at is after they were born
+    # AND before (or the same year) they died.
+        if current_year >= self.year_born and current_year <= self.year_died:
+            return True
+        else:
+            return False
+
+    def has_spouse(self):
+        return self.partner
